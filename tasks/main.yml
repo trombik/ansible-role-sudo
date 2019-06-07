@@ -1,0 +1,37 @@
+---
+# tasks file for ansible-role-sudo
+
+- include_vars: "{{ ansible_os_family }}.yml"
+
+- include: "install-{{ ansible_os_family }}.yml"
+
+- name: Create log directory
+  file:
+    path: "{{ sudo_log_dir }}"
+    mode: 0755
+    owner: "{{ sudo_user }}"
+    group: "{{ sudo_group }}"
+    state: directory
+  notify: Restart sudo
+
+- name: Create db directory
+  file:
+    path: "{{ sudo_db_dir }}"
+    mode: 0755
+    owner: "{{ sudo_user }}"
+    group: "{{ sudo_group }}"
+    state: directory
+  notify: Restart sudo
+
+- name: Create sudo.conf
+  template:
+    src: sudo.conf.j2
+    dest: "{{ sudo_conf_file }}"
+    validate: echo %s
+  notify: Restart sudo
+
+- name: Start sudo
+  service:
+    name: "{{ sudo_service }}"
+    enabled: true
+    state: started

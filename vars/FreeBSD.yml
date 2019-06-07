@@ -1,0 +1,3 @@
+---
+__sudo_db_dir: /var/db/sudo
+__sudo_conf_dir: /usr/local/etc/sudo

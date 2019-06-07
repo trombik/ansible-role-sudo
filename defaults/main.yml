@@ -1,0 +1,9 @@
+---
+sudo_user: sudo
+sudo_group: sudo
+sudo_log_dir: /var/log/sudo
+sudo_db_dir: "{{ __sudo_db_dir }}"
+sudo_service: sudo
+sudo_conf_dir: "{{ __sudo_conf_dir }}"
+sudo_conf_file: "{{ __sudo_conf_dir }}/sudo.conf"
+sudo_flags: ""

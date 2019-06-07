@@ -1,0 +1,6 @@
+---
+- hosts: localhost
+  roles:
+    - ansible-role-sudo
+  vars:
+    sudo_config: ""

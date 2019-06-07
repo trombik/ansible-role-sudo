@@ -1,0 +1,6 @@
+---
+
+- name: Install sudo
+  pkgng:
+    name: sudo
+    state: present
