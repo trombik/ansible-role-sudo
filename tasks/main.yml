@@ -1,37 +1,59 @@
 ---
 # tasks file for ansible-role-sudo
 
-- include_vars: "{{ ansible_os_family }}.yml"
+- name: Include OS-specific variables
+  include_vars: "{{ ansible_os_family }}.yml"
 
-- include: "install-{{ ansible_os_family }}.yml"
+- name: Include OS-specific tasks
+  include: "install-{{ ansible_os_family }}.yml"
 
-- name: Create log directory
+- name: Create sudo_config_dir
   file:
-    path: "{{ sudo_log_dir }}"
+    path: "{{ sudo_config_dir }}"
     mode: 0755
-    owner: "{{ sudo_user }}"
-    group: "{{ sudo_group }}"
     state: directory
-  notify: Restart sudo
 
-- name: Create db directory
+- name: Create sudo_confd_dir
   file:
-    path: "{{ sudo_db_dir }}"
+    path: "{{ sudo_confd_dir }}"
     mode: 0755
-    owner: "{{ sudo_user }}"
-    group: "{{ sudo_group }}"
     state: directory
-  notify: Restart sudo
 
-- name: Create sudo.conf
+- name: Validate sudo_configs
+  assert:
+    that:
+      - "'name' in item"
+  with_items: "{{ sudo_configs }}"
+
+- name: Validate `state` attribute in sudo_configs
+  assert:
+    that:
+      - "item.state == 'present' or item.state == 'absent'"
+  when:
+    - "'state' in item"
+  with_items: "{{ sudo_configs }}"
+
+- name: Create sudo_configs under sudoers.d
   template:
-    src: sudo.conf.j2
-    dest: "{{ sudo_conf_file }}"
-    validate: echo %s
-  notify: Restart sudo
+    src: sudo.j2
+    dest: "{{ sudo_confd_dir }}/{{ item.name }}"
+    validate: visudo -cf %s
+    mode: 0440
+  when:
+    - "not 'state' in item or item.state == 'present'"
+  with_items: "{{ sudo_configs }}"
 
-- name: Start sudo
-  service:
-    name: "{{ sudo_service }}"
-    enabled: true
-    state: started
+- name: Remove sudo_configs under sudoers.d
+  file:
+    path: "{{ sudo_confd_dir }}/{{ item.name }}"
+    state: absent
+  when:
+    - "'state' in item"
+    - "item.state == 'absent'"
+  with_items: "{{ sudo_configs }}"
+
+- name: Create sudoer
+  template:
+    src: sudoers.j2
+    dest: "{{ sudo_config_dir }}/sudoer"
+    validate: visudo -cf %s

@@ -1,3 +1,4 @@
 ---
-__sudo_db_dir: /var/db/sudo
+__sudo_package: sudo
+__sudo_config_dir: /usr/local/etc
 __sudo_conf_dir: /usr/local/etc/sudo

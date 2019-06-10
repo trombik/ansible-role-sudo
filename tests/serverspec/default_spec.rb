@@ -2,57 +2,60 @@ require "spec_helper"
 require "serverspec"
 
 package = "sudo"
-service = "sudo"
-config  = "/etc/sudo/sudo.conf"
-user    = "sudo"
-group   = "sudo"
-ports   = [PORTS]
-log_dir = "/var/log/sudo"
-db_dir  = "/var/lib/sudo"
-
-case os[:family]
-when "freebsd"
-  config = "/usr/local/etc/sudo.conf"
-  db_dir = "/var/db/sudo"
-end
+config_dir = case os[:family]
+             when "freebsd"
+               "/usr/local/etc"
+             else
+               "/etc"
+             end
+confd_dir = "#{config_dir}/sudoers.d"
+config = "#{config_dir}/sudoer"
+flagments = %w[vagrant buildbot]
+default_group = case os[:family]
+                when "freebsd", "openbsd"
+                  "wheel"
+                else
+                  "root"
+                end
+default_user = "root"
 
 describe package(package) do
   it { should be_installed }
 end
 
+describe file confd_dir do
+  it { should exist }
+  it { should be_directory }
+  it { should be_mode 755 }
+  it { should be_owned_by default_user }
+  it { should be_grouped_into default_group }
+end
+
 describe file(config) do
   it { should be_file }
-  its(:content) { should match Regexp.escape("sudo") }
+  its(:content) { should match(/# Managed by ansible$/) }
+  its(:content) { should match(/^root ALL=\(ALL\) ALL$/) }
+  its(:content) { should match(/^#includedir #{confd_dir}$/) }
 end
 
-describe file(log_dir) do
-  it { should exist }
-  it { should be_mode 755 }
-  it { should be_owned_by user }
-  it { should be_grouped_into group }
-end
-
-describe file(db_dir) do
-  it { should exist }
-  it { should be_mode 755 }
-  it { should be_owned_by user }
-  it { should be_grouped_into group }
-end
-
-case os[:family]
-when "freebsd"
-  describe file("/etc/rc.conf.d/sudo") do
+flagments.each do |f|
+  describe file "#{confd_dir}/#{f}" do
     it { should be_file }
+    it { should be_owned_by default_user }
+    it { should be_grouped_into default_group }
+    it { should be_mode 440 }
+    its(:content) { should match(/# Managed by ansible$/) }
+    its(:content) { should match(/^# #{f}$/) }
+    its(:content) { should match(/^#{f}\s+ALL/) }
   end
 end
 
-describe service(service) do
-  it { should be_running }
-  it { should be_enabled }
+describe file "#{confd_dir}/foo" do
+  it { should_not exist }
 end
 
-ports.each do |p|
-  describe port(p) do
-    it { should be_listening }
-  end
+describe command "sudo --version" do
+  its(:exit_status) { should eq 0 }
+  its(:stderr) { should eq "" }
+  its(:stdout) { should match(/Sudo version/) }
 end

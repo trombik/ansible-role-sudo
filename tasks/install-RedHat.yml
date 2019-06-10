@@ -1,11 +1,11 @@
 ---
 
 - name: Install sudo
-  pkgng:
+  yum:
     name: "{{ sudo_package }}"
     state: present
 
 - name: Install sudo_extra_packages
-  pkgng:
+  yum:
     name: "{{ sudo_extra_packages }}"
     state: present
