@@ -1,11 +1,11 @@
 ---
 
 - name: Install sudo
-  pkgng:
+  openbsd_pkg:
     name: "{{ sudo_package }}"
     state: present
 
 - name: Install sudo_extra_packages
-  pkgng:
+  openbsd_pkg:
     name: "{{ sudo_extra_packages }}"
     state: present
